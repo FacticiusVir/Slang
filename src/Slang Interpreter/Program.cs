@@ -27,16 +27,29 @@ namespace Slang
                 {
                     Type = OpType.MakeExpression,
                     Operands = new[] { 2 }
+                },
+                new Op
+                {
+                    Type = OpType.InvokeExternal,
+                    Operands = new[] { 0, 3 }
+                },
+                new Op
+                {
+                    Type = OpType.InvokeExternal,
+                    Operands = new[] { 1, 3 }
                 }
             };
-
-            Console.WriteLine(Evaluate(program, 0));
-            Console.WriteLine(Evaluate(program, 1));
-            Console.WriteLine(Evaluate(program, 2));
-            Console.WriteLine(Evaluate(program, 3));
+            
+            Console.WriteLine(Evaluate(program, 5));
 
             Console.ReadLine();
         }
+
+        private static SlangType Int32 = new PrimitiveType
+        {
+            Format = PrimitiveFormat.SignedInteger,
+            Size = 4
+        };
 
         private static SlangValue Evaluate(Op[] program, int entryPoint)
         {
@@ -48,11 +61,7 @@ namespace Slang
                     return new SlangValue
                     {
                         Type = SlangType.TypeDeclaration,
-                        Value = new PrimitiveType
-                        {
-                            Format = PrimitiveFormat.SignedInteger,
-                            Size = 4
-                        }
+                        Value = Int32
                     };
                 case OpType.Literal:
                     return new SlangValue
@@ -64,7 +73,7 @@ namespace Slang
                     return new SlangValue
                     {
                         Type = SlangType.ExpressionTree,
-                        Value = Tuple.Create(program, op.Operands[0])
+                        Value = new SlangExpression(program, op.Operands[0])
                     };
                 case OpType.Add:
                     var left = Evaluate(program, op.Operands[0]);
@@ -74,6 +83,28 @@ namespace Slang
                     {
                         Type = left.Type,
                         Value = (int)left.Value + (int)right.Value
+                    };
+                case OpType.InvokeExternal:
+                    switch(op.Operands[0])
+                    {
+                        case 0:
+                            var expression = (SlangExpression)Evaluate(program, op.Operands[1]).Value;
+                            return Evaluate(expression.Program, expression.EntryPoint);
+                        case 1:
+                            Console.WriteLine(" > " + Evaluate(program, op.Operands[1]).Value);
+                            break;
+                        default:
+                            return new SlangValue
+                            {
+                                Type = Int32,
+                                Value = 1
+                            };
+                    }
+
+                    return new SlangValue
+                    {
+                        Type = Int32,
+                        Value = 0
                     };
             }
 

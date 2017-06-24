@@ -6,4 +6,8 @@
     <RootNamespace>Slang</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Slang\Slang.csproj" />
+  </ItemGroup>
+
 </Project>
