@@ -1,41 +1,37 @@
-﻿namespace Slang
+﻿using System;
+
+namespace Slang
 {
-    public class SlangExpression
+    public abstract class SlangExpression
     {
-        public SlangExpression(Op[] program, int entryPoint)
+        public static SlangBinaryOperatorExpression Add(SlangExpression left, SlangExpression right)
         {
-            this.Program = program;
-            this.EntryPoint = entryPoint;
+            return new SlangBinaryOperatorExpression(SlangOperator.Add, left, right);
         }
 
-        public Op[] Program
+        public static SlangBinaryOperatorExpression Subtract(SlangExpression left, SlangExpression right)
         {
-            get;
+            return new SlangBinaryOperatorExpression(SlangOperator.Subtract, left, right);
         }
 
-        public int EntryPoint
+        public static SlangBinaryOperatorExpression Multiply(SlangExpression left, SlangExpression right)
         {
-            get;
+            return new SlangBinaryOperatorExpression(SlangOperator.Multiply, left, right);
         }
 
-        public override string ToString()
+        public static SlangBinaryOperatorExpression Divide(SlangExpression left, SlangExpression right)
         {
-            return $"Expression{{{ToString(this.Program, this.EntryPoint)}}}";
+            return new SlangBinaryOperatorExpression(SlangOperator.Divide, left, right);
         }
 
-        private static string ToString(Op[] program, int entryPoint)
+        public static SlangExpression CreateType(SlangType type)
         {
-            var op = program[entryPoint];
+            return new SlangCreateTypeExpression(type);
+        }
 
-            switch (op.Type)
-            {
-                case OpType.Add:
-                    return $"{ToString(program, op.Operands[0])} + {ToString(program, op.Operands[1])}";
-                case OpType.Literal:
-                    return op.Operands[1].ToString();
-            }
-
-            return $"{op.Type}/[{string.Join(", ", op.Operands)}]";
+        public static SlangExpression Literal(SlangExpression typeExpression, object value)
+        {
+            return new SlangLiteralExpression(typeExpression, value);
         }
     }
 }

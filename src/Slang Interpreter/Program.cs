@@ -6,6 +6,8 @@ namespace Slang
 {
     class Program
     {
+        private static readonly ExpressionBuilder expressionBuilder = new ExpressionBuilder();
+
         static void Main(string[] args)
         {
             var program = new Op[]
@@ -38,44 +40,13 @@ namespace Slang
                 new Op
                 {
                     Type = OpType.InvokeExternal,
-                    Operands = new[] { 0, 3 }
-                },
-                // 5
-                new Op
-                {
-                    Type = OpType.InvokeExternal,
                     Operands = new[] { 1, 3 }
-                },
-                // 6
-                new Op
-                {
-                    Type = OpType.InvokeExternal,
-                    Operands = new[] { 2, 3 }
-                },
-                // 7
-                new Op
-                {
-                    Type = OpType.InvokeExternal,
-                    Operands = new[] { 3 }
-                },
-                // 8
-                new Op
-                {
-                    Type = OpType.InvokeExternal,
-                    Operands = new[] { 1, 7 }
-                },
-                // 9
-                new Op
-                {
-                    Type = OpType.InvokeExternal,
-                    Operands = new[] { 0, 7 }
-                },
+                }
             };
 
-            Console.WriteLine(Evaluate(program, 6));
-            Console.WriteLine(Evaluate(program, 7));
-            Console.WriteLine(Evaluate(program, 8));
-            Console.WriteLine(Evaluate(program, 9));
+            var assembly = new SlangAssembly(program, null);
+
+            Console.WriteLine(Evaluate(assembly, 4));
 
             Console.ReadLine();
         }
@@ -86,9 +57,9 @@ namespace Slang
             Size = 4
         };
 
-        private static SlangValue Evaluate(Op[] program, int entryPoint)
+        private static SlangValue Evaluate(SlangAssembly assembly, int entryPoint)
         {
-            var op = program[entryPoint];
+            var op = assembly.Program[entryPoint];
 
             switch (op.Type)
             {
@@ -101,18 +72,18 @@ namespace Slang
                 case OpType.Literal:
                     return new SlangValue
                     {
-                        Type = (SlangType)Evaluate(program, op.Operands[0]).Value,
+                        Type = (SlangType)Evaluate(assembly, op.Operands[0]).Value,
                         Value = op.Operands[1]
                     };
                 case OpType.MakeExpression:
                     return new SlangValue
                     {
                         Type = SlangType.ExpressionTree,
-                        Value = new SlangExpression(program, op.Operands[0])
+                        Value = expressionBuilder.Build(assembly, op.Operands[0])
                     };
                 case OpType.Add:
-                    var left = Evaluate(program, op.Operands[0]);
-                    var right = Evaluate(program, op.Operands[1]);
+                    var left = Evaluate(assembly, op.Operands[0]);
+                    var right = Evaluate(assembly, op.Operands[1]);
 
                     return new SlangValue
                     {
@@ -125,13 +96,14 @@ namespace Slang
                     switch (op.Operands[0])
                     {
                         case 0:
-                            var expression = (SlangExpression)Evaluate(program, op.Operands[1]).Value;
-                            return Evaluate(expression.Program, expression.EntryPoint);
+                            var expression = (SlangExpression)Evaluate(assembly, op.Operands[1]).Value;
+                            //return Evaluate(expression.Program, expression.EntryPoint);
+                            break;
                         case 1:
-                            WriteToConsole(program, op.Operands[1]);
+                            WriteToConsole(assembly, op.Operands[1]);
                             break;
                         case 2:
-                            Serialise(program, op.Operands[1]);
+                            Serialise(assembly, op.Operands[1]);
                             break;
                         case 3:
                             return new SlangValue
@@ -154,24 +126,24 @@ namespace Slang
             throw new NotSupportedException();
         }
 
-        private static void WriteToConsole(Op[] program, int entryPoint)
+        private static void WriteToConsole(SlangAssembly assembly, int entryPoint)
         {
-            Console.WriteLine(" > " + Evaluate(program, entryPoint).Value);
+            Console.WriteLine(" > " + Evaluate(assembly, entryPoint).Value);
         }
 
-        private static void Serialise(Op[] program, int entrypoint)
+        private static void Serialise(SlangAssembly assembly, int entrypoint)
         {
-            var expression = (SlangExpression)Evaluate(program, entrypoint).Value;
+            var targetAssembly = (SlangAssembly)Evaluate(assembly, entrypoint).Value;
 
             using (var file = File.Create(".\\output.slbin"))
             {
                 using (var writer = new BinaryWriter(file))
                 {
                     writer.Write(1);
-                    writer.Write(expression.EntryPoint);
-                    writer.Write(expression.Program.Length);
+                    //writer.Write(targetAssembly.EntryPoint);
+                    writer.Write(targetAssembly.Program.Length);
 
-                    foreach (var op in expression.Program)
+                    foreach (var op in targetAssembly.Program)
                     {
                         writer.Write((int)op.Type);
                         writer.Write(op.Operands.Length);
@@ -185,14 +157,14 @@ namespace Slang
             }
         }
 
-        private static SlangExpression Deserialise()
+        private static SlangAssembly Deserialise()
         {
             using (var file = File.OpenRead(".\\output.slbin"))
             {
                 using (var reader = new BinaryReader(file))
                 {
                     Debug.Assert(reader.ReadInt32() == 1);
-                    int entryPoint = reader.ReadInt32();
+                    //int entryPoint = reader.ReadInt32();
                     int opCount = reader.ReadInt32();
 
                     var program = new Op[opCount];
@@ -217,7 +189,7 @@ namespace Slang
                         };
                     }
 
-                    return new SlangExpression(program, entryPoint);
+                    return new SlangAssembly(program, null);
                 }
             }
         }

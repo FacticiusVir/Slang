@@ -17,5 +17,7 @@
         public readonly static SlangType TypeDeclaration = new SlangType("TypeDeclaration");
 
         public readonly static SlangType ExpressionTree = new SlangType("ExpressionTree");
+
+        public readonly static SlangType Assembly = new SlangType("Assembly");
     }
 }
